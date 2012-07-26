@@ -210,7 +210,23 @@ NSString *const kGPUImageColorSwizzlingFragmentShaderString = SHADER_STRING
 {
     isRecording = NO;
 //    [assetWriterVideoInput markAsFinished];
-    [assetWriter finishWriting];    
+
+//    [assetWriter finishWriting];
+    
+    // TESTING: get the GPUImageMovieWriterDelegate to fire (endProcessing isn't firing otherwise?)
+    // TODO: only tested with video camera input, test with file input (which seems to have other code to handle the complete/error callbacks?)
+    // TODO: check & handle if finishWriting returns NO
+    // TODO: handle when the asset writer status isn't complete (should it trigger movieRecordingFailedWithError?) 
+    BOOL finished = [assetWriter finishWriting];  // NB: blocks until finished
+    if (finished && assetWriter.status == AVAssetWriterStatusCompleted) 
+    {
+        [self endProcessing];
+    }
+    else 
+    {
+        // TODO: handle..
+    }
+
 }
 
 - (void)processAudioBuffer:(CMSampleBufferRef)audioBuffer;

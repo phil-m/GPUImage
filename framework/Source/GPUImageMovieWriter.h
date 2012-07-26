@@ -30,6 +30,8 @@ extern NSString *const kGPUImageColorSwizzlingFragmentShaderString;
 
     CGSize videoSize;
     GPUImageRotationMode inputRotation;
+    
+    CMTime startTime, previousFrameTime;
 }
 
 @property(readwrite, nonatomic) BOOL hasAudioTrack;
@@ -49,5 +51,10 @@ extern NSString *const kGPUImageColorSwizzlingFragmentShaderString;
 - (void)finishRecording;
 - (void)processAudioBuffer:(CMSampleBufferRef)audioBuffer;
 - (void)enableSynchronizationCallbacks;
+
+// Movie recording time helper methods
+- (CMTime)getStartTime;
+- (CMTime)getPreviousFrameTime;
+- (BOOL)recordingHasStarted;
 
 @end

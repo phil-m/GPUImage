@@ -29,8 +29,6 @@ NSString *const kGPUImageColorSwizzlingFragmentShaderString = SHADER_STRING
     
     GLubyte *frameData;
     
-    CMTime startTime, previousFrameTime;
-    
     BOOL isRecording;
 }
 
@@ -260,6 +258,32 @@ NSString *const kGPUImageColorSwizzlingFragmentShaderString = SHADER_STRING
         [assetWriterAudioInput requestMediaDataWhenReadyOnQueue:dispatch_get_main_queue() usingBlock:audioInputReadyCallback];
     }        
     
+}
+
+#pragma mark -
+#pragma mark Movie recording time helper methods
+
+- (CMTime)getStartTime 
+{
+    return startTime;
+}
+- (CMTime)getPreviousFrameTime 
+{
+    return previousFrameTime;
+}
+// if startTime is invalid, actual recording hasn't started yet, even if you've called startRecording, 
+// processAudioBuffer or newFrameReadyAtTime:atIndex: may not have fired yet, so no frames are saved yet
+// NB: calling finishRecording can cause issues if triggered before startTime is actually set/started
+- (BOOL)recordingHasStarted 
+{
+    if (CMTIME_IS_INVALID(startTime)) 
+    {
+        return NO;
+    }
+    else 
+    {
+        return YES;
+    }
 }
 
 #pragma mark -

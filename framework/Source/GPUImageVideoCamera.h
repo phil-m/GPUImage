@@ -13,6 +13,7 @@
 
     NSUInteger numberOfFramesCaptured;
     CGFloat totalFrameTimeDuringCapture;
+    CGFloat _currentFrameTimeDuringCapture;
     
     AVCaptureSession *_captureSession;
     AVCaptureDevice *_inputCamera;
@@ -26,8 +27,14 @@
 /// The AVCaptureSession used to capture from the camera
 @property(readonly, retain) AVCaptureSession *captureSession;
 
-/// This enables the benchmarking mode, which logs out instantaneous and average frame times to the console
+/// This enables the benchmarking mode, instantaneous and average frame times are available to calculate fps stats
 @property(readwrite, nonatomic) BOOL runBenchmark;
+
+/// When benchmarking is enabled, this logs out instantaneous and average frame times to the console
+@property(readwrite, nonatomic) BOOL logBenchmark;
+
+/// When benchmarking is enabled, this can be used to access the current frame time for use with fps calculations
+@property(readonly, nonatomic) CGFloat currentFrameTimeDuringCapture;
 
 /// Use this property to manage camera settings. Focus point, exposure point, etc.
 @property(readonly) AVCaptureDevice *inputCamera;

@@ -22,6 +22,8 @@
 @synthesize captureSession = _captureSession;
 @synthesize inputCamera = _inputCamera;
 @synthesize runBenchmark = _runBenchmark;
+@synthesize logBenchmark = _logBenchmark;
+@synthesize currentFrameTimeDuringCapture = _currentFrameTimeDuringCapture;
 @synthesize outputImageOrientation = _outputImageOrientation;
 
 #pragma mark -
@@ -47,6 +49,7 @@
 	audioProcessingQueue = dispatch_queue_create("com.sunsetlakesoftware.GPUImage.processingQueue", NULL);
     
     _runBenchmark = NO;
+    _logBenchmark = NO;
     capturePaused = NO;
     outputRotation = kGPUImageNoRotation;
     
@@ -323,8 +326,14 @@
             {
                 CFAbsoluteTime currentFrameTime = (CFAbsoluteTimeGetCurrent() - startTime);
                 totalFrameTimeDuringCapture += currentFrameTime;
-                NSLog(@"Average frame time : %f ms", [self averageFrameDurationDuringCapture]);
-                NSLog(@"Current frame time : %f ms", 1000.0 * currentFrameTime);
+                
+                _currentFrameTimeDuringCapture = currentFrameTime;
+                
+                if (_logBenchmark) 
+                {
+                    NSLog(@"Average frame time : %f ms", [self averageFrameDurationDuringCapture]);
+                    NSLog(@"Current frame time : %f ms", 1000.0 * currentFrameTime);
+                }
             }
         }
     }
@@ -365,6 +374,8 @@
             {
                 CFAbsoluteTime currentFrameTime = (CFAbsoluteTimeGetCurrent() - startTime);
                 totalFrameTimeDuringCapture += currentFrameTime;
+                
+                _currentFrameTimeDuringCapture = currentFrameTime;
             }
         }
     }  

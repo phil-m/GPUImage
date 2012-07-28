@@ -34,7 +34,7 @@
     return [filters objectAtIndex:filterIndex];
 }
 
-- (int)filterCount 
+- (int)filterCount;
 {
     return [filters count];
 }

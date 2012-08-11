@@ -44,7 +44,15 @@
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
 {
-    return GPUIMAGE_NUMFILTERS;
+    // Disable the last filter (Core Image face detection) if running on iOS 4.0
+    if ([GPUImageOpenGLESContext supportsFastTextureUpload])
+    {
+        return GPUIMAGE_NUMFILTERS;
+    }
+    else
+    {
+        return (GPUIMAGE_NUMFILTERS - 1);
+    }
 }
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
@@ -85,8 +93,12 @@
         case GPUIMAGE_COLORINVERT: cell.textLabel.text = @"Color invert"; break;
         case GPUIMAGE_GRAYSCALE: cell.textLabel.text = @"Grayscale"; break;
 		case GPUIMAGE_SEPIA: cell.textLabel.text = @"Sepia tone"; break;
+		case GPUIMAGE_MISSETIKATE: cell.textLabel.text = @"Miss Etikate (Lookup)"; break;
+		case GPUIMAGE_SOFTELEGANCE: cell.textLabel.text = @"Soft elegance (Lookup)"; break;
+		case GPUIMAGE_AMATORKA: cell.textLabel.text = @"Amatorka (Lookup)"; break;
 		case GPUIMAGE_PIXELLATE: cell.textLabel.text = @"Pixellate"; break;
 		case GPUIMAGE_POLARPIXELLATE: cell.textLabel.text = @"Polar pixellate"; break;
+		case GPUIMAGE_POLKADOT: cell.textLabel.text = @"Polka dot"; break;
 		case GPUIMAGE_CROSSHATCH: cell.textLabel.text = @"Crosshatch"; break;
 		case GPUIMAGE_SOBELEDGEDETECTION: cell.textLabel.text = @"Sobel edge detection"; break;
 		case GPUIMAGE_PREWITTEDGEDETECTION: cell.textLabel.text = @"Prewitt edge detection"; break;
@@ -117,11 +129,14 @@
         case GPUIMAGE_PERLINNOISE: cell.textLabel.text = @"Perlin noise"; break;
         case GPUIMAGE_VORONI: cell.textLabel.text = @"Voroni"; break;
         case GPUIMAGE_MOSAIC: cell.textLabel.text = @"Mosaic"; break;
+		case GPUIMAGE_LOCALBINARYPATTERN: cell.textLabel.text = @"Local binary pattern"; break;
 		case GPUIMAGE_CHROMAKEY: cell.textLabel.text = @"Chroma key (green)"; break;
 		case GPUIMAGE_DISSOLVE: cell.textLabel.text = @"Dissolve blend"; break;
 		case GPUIMAGE_SCREENBLEND: cell.textLabel.text = @"Screen blend"; break;
 		case GPUIMAGE_COLORBURN: cell.textLabel.text = @"Color burn blend"; break;
 		case GPUIMAGE_COLORDODGE: cell.textLabel.text = @"Color dodge blend"; break;
+		case GPUIMAGE_ADD: cell.textLabel.text = @"Add blend"; break;
+		case GPUIMAGE_DIVIDE: cell.textLabel.text = @"Divide blend"; break;
 		case GPUIMAGE_MULTIPLY: cell.textLabel.text = @"Multiply blend"; break;
 	    case GPUIMAGE_OVERLAY: cell.textLabel.text = @"Overlay blend"; break;
 	    case GPUIMAGE_LIGHTEN: cell.textLabel.text = @"Lighten blend"; break;
@@ -144,6 +159,7 @@
 		case GPUIMAGE_CUSTOM: cell.textLabel.text = @"Custom"; break;
         case GPUIMAGE_FILECONFIG: cell.textLabel.text = @"Filter Chain"; break;
         case GPUIMAGE_FILTERGROUP: cell.textLabel.text = @"Filter Group"; break;
+        case GPUIMAGE_FACES: cell.textLabel.text = @"Face Detection"; break;
 	}
     
     return cell;

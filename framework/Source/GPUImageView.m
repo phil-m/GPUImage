@@ -38,6 +38,7 @@
 
 @synthesize sizeInPixels = _sizeInPixels;
 @synthesize fillMode = _fillMode;
+@synthesize enabled;
 
 #pragma mark -
 #pragma mark Initialization and teardown
@@ -79,6 +80,8 @@
         self.contentScaleFactor = [[UIScreen mainScreen] scale];
     }
 
+    self.enabled = YES;
+    
     inputRotation = kGPUImageNoRotation;
     
     [self setBackgroundColorRed:0.0 green:0.0 blue:0.0 alpha:1.0];
@@ -349,7 +352,7 @@
     
 	glActiveTexture(GL_TEXTURE4);
 	glBindTexture(GL_TEXTURE_2D, inputTextureForDisplay);
-	glUniform1i(displayInputTextureUniform, 4);	
+	glUniform1i(displayInputTextureUniform, 4);
     
     glVertexAttribPointer(displayPositionAttribute, 2, GL_FLOAT, 0, 0, imageVertices);
 	glVertexAttribPointer(displayTextureCoordinateAttribute, 2, GL_FLOAT, 0, 0, [GPUImageView textureCoordinatesForRotation:inputRotation]);

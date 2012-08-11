@@ -82,6 +82,14 @@ Documentation is generated from header comments using appledoc. To build the doc
   - *shadows*: Increase to lighten shadows, from 0.0 to 1.0, with 0.0 as the default.
   - *highlights*: Decrease to darken highlights, from 0.0 to 1.0, with 1.0 as the default.
 
+- **GPUImageLookupFilter**: Uses an RGB color lookup image to remap the colors in an image. First, use your favourite photo editing application to apply a filter to lookup.png from GPUImage/framework/Resources. For this to work properly each pixel color must not depend on other pixels (e.g. blur will not work). If you need a more complex filter you can create as many lookup tables as required. Once ready, use your new lookup.png file as a second input for GPUImageLookupFilter.
+
+- **GPUImageLookupFilter**: A photo filter based on a Photoshop action by Amatorka: http://amatorka.deviantart.com/art/Amatorka-Action-2-121069631 . If you want to use this effect you have to add lookup_amatorka.png from the GPUImage Resources folder to your application bundle.
+
+- **GPUImageMissEtikateFilter**: A photo filter based on a Photoshop action by Miss Etikate: http://miss-etikate.deviantart.com/art/Photoshop-Action-15-120151961 . If you want to use this effect you have to add lookup_miss_etikate.png from the GPUImage Resources folder to your application bundle.
+
+- **GPUImageSoftEleganceFilter**: Another lookup-based color remapping filter. If you want to use this effect you have to add lookup_soft_elegance_1.png and lookup_soft_elegance_2.png from the GPUImage Resources folder to your application bundle.
+
 - **GPUImageColorInvertFilter**: Inverts the colors of an image
 
 - **GPUImageGrayscaleFilter**: Converts an image to grayscale (a slightly faster implementation of the saturation filter, without the ability to vary the color contribution)
@@ -138,6 +146,7 @@ Documentation is generated from header comments using appledoc. To build the doc
   - *excludeCircleRadius*: The radius of the circular area being excluded from the blur
   - *excludeCirclePoint*: The center of the circular area being excluded from the blur
   - *excludeBlurSize*: The size of the area between the blurred portion and the clear circle 
+  - *aspectRatio*: The aspect ratio of the image, used to adjust the circularity of the in-focus region. By default, this matches the image aspect ratio, but you can override this value.
 
 - **GPUImageTiltShiftFilter**: A simulated tilt shift lens effect
   - *blurSize*: A multiplier for the size of the out-of-focus blur, ranging from 0.0 on up, with a default of 2.0
@@ -210,6 +219,10 @@ Documentation is generated from header comments using appledoc. To build the doc
 
 - **GPUImageMultiplyBlendFilter**: Applies a multiply blend of two images
 
+- **GPUImageAddBlendFilter**: Applies an additive blend of two images
+
+- **GPUImageDivideBlendFilter**: Applies a division blend of two images
+
 - **GPUImageOverlayBlendFilter**: Applies an overlay blend of two images
 
 - **GPUImageDarkenBlendFilter**: Blends two images by taking the minimum value of each color component between the images
@@ -241,6 +254,10 @@ Documentation is generated from header comments using appledoc. To build the doc
 - **GPUImagePolarPixellateFilter**: Applies a pixellation effect on an image or video, based on polar coordinates instead of Cartesian ones
   - *center*: The center about which to apply the pixellation, defaulting to (0.5, 0.5)
   - *pixelSize*: The fractional pixel size, split into width and height components. The default is (0.05, 0.05)
+
+- **GPUImagePolkaDotFilter**: Breaks an image up into colored dots within a regular grid
+  - *fractionalWidthOfAPixel*: How large the dots are, as a fraction of the width and height of the image (0.0 - 1.0, default 0.05)
+  - *dotScaling*: What fraction of each grid space is taken up by a dot, from 0.0 to 1.0 with a default of 0.9.
 
 - **GPUImageCrosshatchFilter**: This converts an image into a black-and-white crosshatch pattern
   - *crossHatchSpacing*: The fractional width of the image to use as the spacing for the crosshatch. The default is 0.03.

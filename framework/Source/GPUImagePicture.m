@@ -36,9 +36,8 @@
 		return nil;
     }
     self.shouldSmoothlyScaleOutput = smoothlyScaleOutput;
-
-    [GPUImageOpenGLESContext useImageProcessingContext];
-    
+        
+    // TODO: Dispatch this whole thing asynchronously to move image loading off main thread
     CGFloat widthOfImage = CGImageGetWidth(newImageSource);
     CGFloat heightOfImage = CGImageGetHeight(newImageSource);
     pixelSizeOfImage = CGSizeMake(widthOfImage, heightOfImage);
@@ -93,17 +92,34 @@
 //    elapsedTime = (CFAbsoluteTimeGetCurrent() - startTime) * 1000.0;
 //    NSLog(@"Core Graphics drawing time: %f", elapsedTime);
 
-    glBindTexture(GL_TEXTURE_2D, outputTexture);
-    if (self.shouldSmoothlyScaleOutput)
-    {
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-    }
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, (int)pixelSizeToUseForTexture.width, (int)pixelSizeToUseForTexture.height, 0, GL_BGRA, GL_UNSIGNED_BYTE, imageData);
+//    CGFloat currentRedTotal = 0.0f, currentGreenTotal = 0.0f, currentBlueTotal = 0.0f, currentAlphaTotal = 0.0f;
+//	NSUInteger totalNumberOfPixels = round(pixelSizeToUseForTexture.width * pixelSizeToUseForTexture.height);
+//    
+//    for (NSUInteger currentPixel = 0; currentPixel < totalNumberOfPixels; currentPixel++)
+//    {
+//        currentBlueTotal += (CGFloat)imageData[(currentPixel * 4)] / 255.0f;
+//        currentGreenTotal += (CGFloat)imageData[(currentPixel * 4) + 1] / 255.0f;
+//        currentRedTotal += (CGFloat)imageData[(currentPixel * 4 + 2)] / 255.0f;
+//        currentAlphaTotal += (CGFloat)imageData[(currentPixel * 4) + 3] / 255.0f;
+//    }
+//    
+//    NSLog(@"Debug, average input image red: %f, green: %f, blue: %f, alpha: %f", currentRedTotal / (CGFloat)totalNumberOfPixels, currentGreenTotal / (CGFloat)totalNumberOfPixels, currentBlueTotal / (CGFloat)totalNumberOfPixels, currentAlphaTotal / (CGFloat)totalNumberOfPixels);
     
-    if (self.shouldSmoothlyScaleOutput)
-    {
-        glGenerateMipmap(GL_TEXTURE_2D);
-    }
+    runSynchronouslyOnVideoProcessingQueue(^{
+        [GPUImageOpenGLESContext useImageProcessingContext];
+        
+        glBindTexture(GL_TEXTURE_2D, outputTexture);
+        if (self.shouldSmoothlyScaleOutput)
+        {
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+        }
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, (int)pixelSizeToUseForTexture.width, (int)pixelSizeToUseForTexture.height, 0, GL_BGRA, GL_UNSIGNED_BYTE, imageData);
+        
+        if (self.shouldSmoothlyScaleOutput)
+        {
+            glGenerateMipmap(GL_TEXTURE_2D);
+        }        
+    });
 
     if (shouldRedrawUsingCoreGraphics)
     {
@@ -123,15 +139,17 @@
 - (void)processImage;
 {
     hasProcessedImage = YES;
-    
-    for (id<GPUImageInput> currentTarget in targets)
-    {
-        NSInteger indexOfObject = [targets indexOfObject:currentTarget];
-        NSInteger textureIndexOfTarget = [[targetTextureIndices objectAtIndex:indexOfObject] integerValue];
-
-        [currentTarget setInputSize:pixelSizeOfImage atIndex:textureIndexOfTarget];
-        [currentTarget newFrameReadyAtTime:kCMTimeIndefinite atIndex:textureIndexOfTarget];
-    }    
+  
+    dispatch_async([GPUImageOpenGLESContext sharedOpenGLESQueue], ^{
+        for (id<GPUImageInput> currentTarget in targets)
+        {
+            NSInteger indexOfObject = [targets indexOfObject:currentTarget];
+            NSInteger textureIndexOfTarget = [[targetTextureIndices objectAtIndex:indexOfObject] integerValue];
+            
+            [currentTarget setInputSize:pixelSizeOfImage atIndex:textureIndexOfTarget];
+            [currentTarget newFrameReadyAtTime:kCMTimeIndefinite atIndex:textureIndexOfTarget];
+        }    
+    });
 }
 
 - (CGSize)outputImageSize;

@@ -7,6 +7,8 @@
     GPUImageMovieWriter *synchronizedMovieWriter;
     CVOpenGLESTextureCacheRef coreVideoTextureCache;
     AVAssetReader *reader;
+    CMTime previousFrameTime;
+    CFAbsoluteTime previousActualFrameTime;
 }
 
 - (void)processAsset;
@@ -18,6 +20,7 @@
 @synthesize url = _url;
 @synthesize asset = _asset;
 @synthesize runBenchmark = _runBenchmark;
+@synthesize playAtActualSpeed = _playAtActualSpeed;
 
 #pragma mark -
 #pragma mark Initialization and teardown
@@ -29,22 +32,7 @@
         return nil;
     }
 
-    if ([GPUImageOpenGLESContext supportsFastTextureUpload])
-    {
-        [GPUImageOpenGLESContext useImageProcessingContext];
-#if defined(__IPHONE_6_0)
-        CVReturn err = CVOpenGLESTextureCacheCreate(kCFAllocatorDefault, NULL, [[GPUImageOpenGLESContext sharedImageProcessingOpenGLESContext] context], NULL, &coreVideoTextureCache);
-#else
-        CVReturn err = CVOpenGLESTextureCacheCreate(kCFAllocatorDefault, NULL, (__bridge void *)[[GPUImageOpenGLESContext sharedImageProcessingOpenGLESContext] context], NULL, &coreVideoTextureCache);
-#endif
-        if (err) 
-        {
-            NSAssert(NO, @"Error at CVOpenGLESTextureCacheCreate %d", err);
-        }
-
-        // Need to remove the initially created texture
-        [self deleteOutputTexture];
-    }
+    [self textureCacheSetup];
 
     self.url = url;
     self.asset = nil;
@@ -52,32 +40,41 @@
     return self;
 }
 
--(id)initWithAsset:(AVAsset *)asset {
+- (id)initWithAsset:(AVAsset *)asset;
+{
     if (!(self = [super init])) 
     {
       return nil;
     }
+    
+    [self textureCacheSetup];
 
-    if ([GPUImageOpenGLESContext supportsFastTextureUpload])
-    {
-        [GPUImageOpenGLESContext useImageProcessingContext];
-#if defined(__IPHONE_6_0)
-        CVReturn err = CVOpenGLESTextureCacheCreate(kCFAllocatorDefault, NULL, [[GPUImageOpenGLESContext sharedImageProcessingOpenGLESContext] context], NULL, &coreVideoTextureCache);
-#else
-        CVReturn err = CVOpenGLESTextureCacheCreate(kCFAllocatorDefault, NULL, (__bridge void *)[[GPUImageOpenGLESContext sharedImageProcessingOpenGLESContext] context], NULL, &coreVideoTextureCache);
-#endif
-        if (err) 
-        {
-            NSAssert(NO, @"Error at CVOpenGLESTextureCacheCreate %d", err);
-        }
-
-        // Need to remove the initially created texture
-        [self deleteOutputTexture];
-    }
     self.url = nil;
     self.asset = asset;
 
     return self;
+}
+
+- (void)textureCacheSetup;
+{
+    if ([GPUImageOpenGLESContext supportsFastTextureUpload])
+    {
+        runSynchronouslyOnVideoProcessingQueue(^{
+            [GPUImageOpenGLESContext useImageProcessingContext];
+#if defined(__IPHONE_6_0)
+            CVReturn err = CVOpenGLESTextureCacheCreate(kCFAllocatorDefault, NULL, [[GPUImageOpenGLESContext sharedImageProcessingOpenGLESContext] context], NULL, &coreVideoTextureCache);
+#else
+            CVReturn err = CVOpenGLESTextureCacheCreate(kCFAllocatorDefault, NULL, (__bridge void *)[[GPUImageOpenGLESContext sharedImageProcessingOpenGLESContext] context], NULL, &coreVideoTextureCache);
+#endif
+            if (err)
+            {
+                NSAssert(NO, @"Error at CVOpenGLESTextureCacheCreate %d", err);
+            }
+            
+            // Need to remove the initially created texture
+            [self deleteOutputTexture];
+        });
+    }
 }
 
 - (void)dealloc
@@ -98,10 +95,14 @@
 
 - (void)startProcessing
 {
-    if(self.url == nil) {
+    if(self.url == nil)
+    {
       [self processAsset];
       return;
     }
+    
+    previousFrameTime = kCMTimeZero;
+    previousActualFrameTime = CFAbsoluteTimeGetCurrent();
   
     NSDictionary *inputOptions = [NSDictionary dictionaryWithObject:[NSNumber numberWithBool:YES] forKey:AVURLAssetPreferPreciseDurationAndTimingKey];
     AVURLAsset *inputAsset = [[AVURLAsset alloc] initWithURL:self.url options:inputOptions];    
@@ -187,8 +188,27 @@
         CMSampleBufferRef sampleBufferRef = [readerVideoTrackOutput copyNextSampleBuffer];
         if (sampleBufferRef) 
         {
+            if (_playAtActualSpeed)
+            {
+                // Do this outside of the video processing queue to not slow that down while waiting
+                CMTime currentSampleTime = CMSampleBufferGetOutputPresentationTimeStamp(sampleBufferRef);
+                CMTime differenceFromLastFrame = CMTimeSubtract(currentSampleTime, previousFrameTime);
+                CFAbsoluteTime currentActualTime = CFAbsoluteTimeGetCurrent();
+                
+                CGFloat frameTimeDifference = CMTimeGetSeconds(differenceFromLastFrame);
+                CGFloat actualTimeDifference = currentActualTime - previousActualFrameTime;
+                
+                if (frameTimeDifference > actualTimeDifference)
+                {
+                    usleep(1000000.0 * (frameTimeDifference - actualTimeDifference));
+                }
+                
+                previousFrameTime = currentSampleTime;
+                previousActualFrameTime = CFAbsoluteTimeGetCurrent();
+            }
+
             __unsafe_unretained GPUImageMovie *weakSelf = self;
-            runOnMainQueueWithoutDeadlocking(^{
+            runSynchronouslyOnVideoProcessingQueue(^{
                 [weakSelf processMovieFrame:sampleBufferRef];
             });
             
@@ -221,10 +241,12 @@
     
     if (audioSampleBufferRef) 
     {
-        [self.audioEncodingTarget processAudioBuffer:audioSampleBufferRef]; 
-        
-        CMSampleBufferInvalidate(audioSampleBufferRef);
-        CFRelease(audioSampleBufferRef);
+        runSynchronouslyOnVideoProcessingQueue(^{
+            [self.audioEncodingTarget processAudioBuffer:audioSampleBufferRef];
+            
+            CMSampleBufferInvalidate(audioSampleBufferRef);
+            CFRelease(audioSampleBufferRef);
+        });
     }
     else
     {
@@ -234,11 +256,18 @@
 
 - (void)processMovieFrame:(CMSampleBufferRef)movieSampleBuffer; 
 {
+//    CMTimeGetSeconds
+//    CMTimeSubtract
+    
     CMTime currentSampleTime = CMSampleBufferGetOutputPresentationTimeStamp(movieSampleBuffer);
     CVImageBufferRef movieFrame = CMSampleBufferGetImageBuffer(movieSampleBuffer);
 
     int bufferHeight = CVPixelBufferGetHeight(movieFrame);
+#if TARGET_IPHONE_SIMULATOR
+    int bufferWidth = CVPixelBufferGetBytesPerRow(movieFrame) / 4; // This works around certain movie frame types on the Simulator (see https://github.com/BradLarson/GPUImage/issues/424)
+#else
     int bufferWidth = CVPixelBufferGetWidth(movieFrame);
+#endif
 
     CFAbsoluteTime startTime = CFAbsoluteTimeGetCurrent();
 

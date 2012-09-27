@@ -1,10 +1,10 @@
 #import <UIKit/UIKit.h>
 
 #import "GPUImageOpenGLESContext.h"
-#import "GLProgram.h"
 
 void runOnMainQueueWithoutDeadlocking(void (^block)(void));
-void report_memory(NSString *tag);
+void runSynchronouslyOnVideoProcessingQueue(void (^block)(void));
+void reportAvailableMemoryForGPUImage(NSString *tag);
 
 @class GPUImageMovieWriter;
 

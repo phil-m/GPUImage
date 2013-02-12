@@ -27,12 +27,16 @@
     AVCaptureDevice *_inputCamera;
     AVCaptureDevice *_microphone;
     AVCaptureDeviceInput *videoInput;
+	AVCaptureVideoDataOutput *videoOutput;
 
     BOOL capturePaused;
     GPUImageRotationMode outputRotation;
     dispatch_semaphore_t frameRenderingSemaphore;
+        
+    BOOL captureAsYUV;
+    GLuint luminanceTexture, chrominanceTexture;
 
-    id<GPUImageVideoCameraDelegate> _delegate;
+    __unsafe_unretained id<GPUImageVideoCameraDelegate> _delegate;
 }
 
 /// The AVCaptureSession used to capture from the camera
@@ -68,7 +72,7 @@
 /// These properties determine whether or not the two camera orientations should be mirrored. By default, both are NO.
 @property(readwrite, nonatomic) BOOL horizontallyMirrorFrontFacingCamera, horizontallyMirrorRearFacingCamera;
 
-@property(nonatomic, retain) id<GPUImageVideoCameraDelegate> delegate;
+@property(nonatomic, assign) id<GPUImageVideoCameraDelegate> delegate;
 
 /// @name Initialization and teardown
 

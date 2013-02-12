@@ -243,7 +243,27 @@ NSString *const kGPUImageColorSwizzlingFragmentShaderString = SHADER_STRING
 	[self startRecording];
 }
 
+- (void)cancelRecording;
+{
+    if (assetWriter.status == AVAssetWriterStatusCompleted)
+    {
+        return;
+    }
+    
+    isRecording = NO;
+    runOnMainQueueWithoutDeadlocking(^{
+        [assetWriterVideoInput markAsFinished];
+        [assetWriterAudioInput markAsFinished];
+        [assetWriter cancelWriting];
+    });
+}
+
 - (void)finishRecording;
+{
+    [self finishRecordingWithCompletionHandler:nil];
+}
+
+- (void)finishRecordingWithCompletionHandler:(void (^)(void))handler;
 {
     if (assetWriter.status == AVAssetWriterStatusCompleted)
     {
@@ -254,7 +274,22 @@ NSString *const kGPUImageColorSwizzlingFragmentShaderString = SHADER_STRING
     runOnMainQueueWithoutDeadlocking(^{
         [assetWriterVideoInput markAsFinished];
         [assetWriterAudioInput markAsFinished];
+#if (!defined(__IPHONE_6_0) || (__IPHONE_OS_VERSION_MAX_ALLOWED < __IPHONE_6_0))
+        // Not iOS 6 SDK
         [assetWriter finishWriting];
+        if (handler) handler();
+#else
+        // iOS 6 SDK
+        if ([assetWriter respondsToSelector:@selector(finishWritingWithCompletionHandler:)]) {
+            // Running iOS 6
+            [assetWriter finishWritingWithCompletionHandler:(handler ?: ^{ })];
+        }
+        else {
+            // Not running iOS 6
+            [assetWriter finishWriting];
+            if (handler) handler();
+        }
+#endif
     });
 }
 
@@ -603,6 +638,16 @@ NSString *const kGPUImageColorSwizzlingFragmentShaderString = SHADER_STRING
 }
 
 - (void)conserveMemoryForNextFrame;
+{
+    
+}
+
+- (BOOL)wantsMonochromeInput;
+{
+    return NO;
+}
+
+- (void)setCurrentlyReceivingMonochromeInput:(BOOL)newValue;
 {
     
 }

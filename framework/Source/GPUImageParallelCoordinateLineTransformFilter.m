@@ -10,6 +10,7 @@ NSString *const kGPUImageHoughAccumulationVertexShaderString = SHADER_STRING
  }
 );
 
+#if TARGET_IPHONE_SIMULATOR || TARGET_OS_IPHONE
 NSString *const kGPUImageHoughAccumulationFragmentShaderString = SHADER_STRING
 (
  const lowp float scalingFactor = 1.0 / 256.0;
@@ -20,6 +21,18 @@ NSString *const kGPUImageHoughAccumulationFragmentShaderString = SHADER_STRING
      gl_FragColor = vec4(0.004, 0.004, 0.004, 1.0);
  }
 );
+#else
+NSString *const kGPUImageHoughAccumulationFragmentShaderString = SHADER_STRING
+(
+ const float scalingFactor = 1.0 / 256.0;
+ 
+ void main()
+ {
+     //     gl_FragColor = vec4(scalingFactor, scalingFactor, scalingFactor, 1.0);
+     gl_FragColor = vec4(0.004, 0.004, 0.004, 1.0);
+ }
+);
+#endif
 
 @interface GPUImageParallelCoordinateLineTransformFilter()
 // Rendering
@@ -89,7 +102,7 @@ NSString *const kGPUImageHoughAccumulationFragmentShaderString = SHADER_STRING
         return;
     }
     
-    [GPUImageOpenGLESContext useImageProcessingContext];
+    [GPUImageContext useImageProcessingContext];
     
     // Grab the edge points from the previous frame and create the parallel coordinate lines for them
     // This would be a great place to have a working histogram pyramid implementation
@@ -163,7 +176,7 @@ NSString *const kGPUImageHoughAccumulationFragmentShaderString = SHADER_STRING
 
     [self setFilterFBO];
     
-    [GPUImageOpenGLESContext setActiveShaderProgram:filterProgram];
+    [GPUImageContext setActiveShaderProgram:filterProgram];
     
     glClearColor(0.0, 0.0, 0.0, 1.0);
     glClear(GL_COLOR_BUFFER_BIT);

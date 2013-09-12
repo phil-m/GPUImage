@@ -31,8 +31,6 @@ extern NSString *const kGPUImageColorSwizzlingFragmentShaderString;
     CGSize videoSize;
     GPUImageRotationMode inputRotation;
     
-    //CMTime startTime, previousFrameTime;
-    
     __unsafe_unretained id<GPUImageTextureDelegate> textureDelegate;
 }
 

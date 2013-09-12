@@ -14,9 +14,6 @@ extern NSString *const kGPUImageColorSwizzlingFragmentShaderString;
 
 @interface GPUImageMovieWriter : NSObject <GPUImageInput>
 {
-    CMVideoDimensions videoDimensions;
-	CMVideoCodecType videoType;
-
     BOOL alreadyFinishedRecording;
     
     NSURL *movieURL;
@@ -34,7 +31,7 @@ extern NSString *const kGPUImageColorSwizzlingFragmentShaderString;
     CGSize videoSize;
     GPUImageRotationMode inputRotation;
     
-    CMTime startTime, previousFrameTime;
+    //CMTime startTime, previousFrameTime;
     
     __unsafe_unretained id<GPUImageTextureDelegate> textureDelegate;
 }
@@ -46,13 +43,18 @@ extern NSString *const kGPUImageColorSwizzlingFragmentShaderString;
 @property(nonatomic, copy) void(^failureBlock)(NSError*);
 @property(nonatomic, assign) id<GPUImageMovieWriterDelegate> delegate;
 @property(readwrite, nonatomic) BOOL encodingLiveVideo;
-@property(nonatomic, copy) void(^videoInputReadyCallback)(void);
-@property(nonatomic, copy) void(^audioInputReadyCallback)(void);
+@property(nonatomic, copy) BOOL(^videoInputReadyCallback)(void);
+@property(nonatomic, copy) BOOL(^audioInputReadyCallback)(void);
 @property(nonatomic) BOOL enabled;
+@property(nonatomic, readonly) AVAssetWriter *assetWriter;
+@property(nonatomic, readonly) CMTime duration;
+@property(nonatomic, assign) CGAffineTransform transform;
+@property(nonatomic, copy) NSArray *metaData;
+@property(nonatomic, assign, getter = isPaused) BOOL paused;
 
 // Initialization and teardown
 - (id)initWithMovieURL:(NSURL *)newMovieURL size:(CGSize)newSize;
-- (id)initWithMovieURL:(NSURL *)newMovieURL size:(CGSize)newSize fileType:(NSString *)newFileType outputSettings:(NSMutableDictionary *)outputSettings;
+- (id)initWithMovieURL:(NSURL *)newMovieURL size:(CGSize)newSize fileType:(NSString *)newFileType outputSettings:(NSDictionary *)outputSettings;
 
 - (void)setHasAudioTrack:(BOOL)hasAudioTrack audioSettings:(NSDictionary *)audioOutputSettings;
 
